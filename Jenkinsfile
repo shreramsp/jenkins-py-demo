@@ -3,7 +3,7 @@ pipeline {
   options { timestamps() }
 
   environment {
-    IMAGE = 'shreramsp/jenkins-py-demo'   // your Docker Hub repo
+    IMAGE = 'shreramsp/jenkins-py-demo'
   }
 
   stages {
@@ -27,7 +27,9 @@ pipeline {
     stage('Build image') {
       steps {
         script {
-          img = docker.build("${IMAGE}:${env.BUILD_NUMBER}")
+          def img = docker.build("${IMAGE}:${env.BUILD_NUMBER}")
+          // stash the name for next stage
+          env.BUILT_TAG = "${IMAGE}:${env.BUILD_NUMBER}"
         }
       }
     }
@@ -35,11 +37,15 @@ pipeline {
     stage('Push image') {
       when { branch 'main' }
       steps {
-        script {
-          docker.withRegistry('https://index.docker.io/v1/', 'dockerhub') {
-            img.push()            // :BUILD_NUMBER
-            img.push('latest')    // :latest
-          }
+        withCredentials([usernamePassword(credentialsId: 'dockerhub',
+                                          usernameVariable: 'DOCKERHUB_USER',
+                                          passwordVariable: 'DOCKERHUB_TOKEN')]) {
+          sh '''
+            echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USER" --password-stdin
+            docker push "${BUILT_TAG}"
+            docker tag "${BUILT_TAG}" "${IMAGE}:latest"
+            docker push "${IMAGE}:latest"
+          '''
         }
       }
     }
