@@ -5,14 +5,21 @@ pipeline {
   stages {
     stage('Install') {
       steps {
-        sh 'python -m pip install --upgrade pip'
-        sh 'pip install -r requirements.txt'
+        sh '''
+          python -m venv .venv
+          . .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+        '''
       }
     }
     stage('Test') {
       steps {
-        sh 'mkdir -p reports'
-        sh 'pytest -q --junitxml=reports/junit.xml'
+        sh '''
+          . .venv/bin/activate
+          mkdir -p reports
+          pytest -q --junitxml=reports/junit.xml
+        '''
       }
     }
   }
