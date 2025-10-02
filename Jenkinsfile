@@ -26,7 +26,8 @@ pipeline {
 
   post {
     always {
-      junit 'reports/junit.xml'
+      junit 'reports/junit.xml'           // surfaces Test Result tab
+      archiveArtifacts 'reports/**'       // lets you download the XML later
     }
   }
 }
